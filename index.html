@@ -1,0 +1,847 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Top Floor Hallenstein – GST Invoice & Receipt Generator</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <style>
+    :root {
+      --bg: #f4f6f9;
+      --card: #ffffff;
+      --primary: #1a365d;
+      --accent: #2b6cb0;
+      --accent-hover: #2c5282;
+      --border: #e2e8f0;
+      --text: #1a202c;
+      --muted: #718096;
+      --success: #276749;
+      --danger: #c53030;
+      --radius: 10px;
+      --shadow: 0 4px 20px rgba(0,0,0,0.06);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      min-height: 100vh;
+    }
+
+    header {
+      background: linear-gradient(135deg, #1a365d 0%, #2b6cb0 100%);
+      color: white;
+      padding: 1.5rem 2rem;
+      text-align: center;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+    }
+
+    header h1 {
+      font-size: 1.55rem;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+    }
+
+    header p {
+      opacity: 0.9;
+      font-size: 0.95rem;
+      margin-top: 0.25rem;
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 1.75rem 1.25rem 3rem;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+    }
+
+    @media (max-width: 900px) {
+      .grid { grid-template-columns: 1fr; }
+    }
+
+    .card {
+      background: var(--card);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 1.5rem;
+      border: 1px solid var(--border);
+    }
+
+    .card h2 {
+      font-size: 1.1rem;
+      color: var(--primary);
+      margin-bottom: 1rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 2px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .form-group {
+      margin-bottom: 1rem;
+    }
+
+    label {
+      display: block;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--muted);
+      margin-bottom: 0.3rem;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+
+    input, textarea, select {
+      width: 100%;
+      padding: 0.6rem 0.75rem;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 0.95rem;
+      font-family: inherit;
+      transition: border-color 0.15s, box-shadow 0.15s;
+      background: #fff;
+    }
+
+    input:focus, textarea:focus, select:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(43, 108, 176, 0.15);
+    }
+
+    textarea { resize: vertical; min-height: 70px; }
+
+    .row-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.85rem;
+    }
+
+    .line-items {
+      margin-top: 0.5rem;
+    }
+
+    .line-item {
+      display: grid;
+      grid-template-columns: 1fr 120px 40px;
+      gap: 0.5rem;
+      margin-bottom: 0.5rem;
+      align-items: start;
+    }
+
+    .line-item input { margin: 0; }
+
+    .btn-icon {
+      background: #fed7d7;
+      color: var(--danger);
+      border: none;
+      border-radius: 6px;
+      width: 36px;
+      height: 36px;
+      cursor: pointer;
+      font-size: 1.1rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.15s;
+    }
+
+    .btn-icon:hover { background: #feb2b2; }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.45rem;
+      padding: 0.7rem 1.25rem;
+      border: none;
+      border-radius: 7px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+      font-family: inherit;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: white;
+    }
+    .btn-primary:hover { background: var(--accent-hover); }
+
+    .btn-success {
+      background: var(--success);
+      color: white;
+    }
+    .btn-success:hover { background: #22543d; }
+
+    .btn-outline {
+      background: transparent;
+      border: 1.5px solid var(--border);
+      color: var(--text);
+    }
+    .btn-outline:hover { border-color: var(--accent); color: var(--accent); }
+
+    .btn-block { width: 100%; }
+
+    .actions {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      margin-top: 1.25rem;
+    }
+
+    .summary-box {
+      background: #edf2f7;
+      border-radius: 8px;
+      padding: 1rem 1.15rem;
+      margin-top: 1rem;
+    }
+
+    .summary-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 0.35rem;
+      font-size: 0.95rem;
+    }
+
+    .summary-row.total {
+      font-weight: 700;
+      font-size: 1.15rem;
+      color: var(--primary);
+      border-top: 1px solid #cbd5e0;
+      padding-top: 0.5rem;
+      margin-top: 0.4rem;
+    }
+
+    .fixed-info {
+      font-size: 0.88rem;
+      color: var(--muted);
+      line-height: 1.55;
+    }
+
+    .fixed-info strong { color: var(--text); }
+
+    .badge {
+      display: inline-block;
+      background: #ebf8ff;
+      color: var(--accent);
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 0.15rem 0.5rem;
+      border-radius: 4px;
+      margin-left: 0.4rem;
+    }
+
+    footer {
+      text-align: center;
+      padding: 1.5rem;
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 1.5rem;
+      right: 1.5rem;
+      background: var(--success);
+      color: white;
+      padding: 0.85rem 1.25rem;
+      border-radius: 8px;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+      font-weight: 500;
+      opacity: 0;
+      transform: translateY(20px);
+      transition: all 0.3s;
+      z-index: 100;
+      pointer-events: none;
+    }
+    .toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>THE TOP FLOOR HALLENSTEIN APARTMENT</h1>
+    <p>GST Invoice &amp; Receipt Generator · Hannah &amp; David Spencer Partnership</p>
+  </header>
+
+  <div class="container">
+    <div class="grid">
+      <!-- LEFT: Form -->
+      <div>
+        <div class="card">
+          <h2>Customer / Bill To</h2>
+          <div class="form-group">
+            <label>Customer / Business Name *</label>
+            <input type="text" id="customerName" placeholder="e.g. John Smith or Acme Ltd" />
+          </div>
+          <div class="form-group">
+            <label>Customer Address</label>
+            <textarea id="customerAddress" placeholder="Street address&#10;Suburb, City Postcode&#10;New Zealand"></textarea>
+          </div>
+          <div class="form-group">
+            <label>Email / Phone</label>
+            <input type="text" id="customerContact" placeholder="email@example.com · 021 123 4567" />
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:1.25rem;">
+          <h2>Invoice Details</h2>
+          <div class="row-2">
+            <div class="form-group">
+              <label>Invoice Number *</label>
+              <input type="text" id="invoiceNo" value="TFA-2026-001" />
+            </div>
+            <div class="form-group">
+              <label>Invoice Date *</label>
+              <input type="date" id="invoiceDate" />
+            </div>
+          </div>
+          <div class="row-2">
+            <div class="form-group">
+              <label>Payment Due Date</label>
+              <input type="date" id="dueDate" />
+            </div>
+            <div class="form-group">
+              <label>Payment Date <span class="badge">when paid</span></label>
+              <input type="date" id="paymentDate" />
+            </div>
+          </div>
+          <div class="form-group" style="margin-top:0.15rem;margin-bottom:0.25rem;">
+            <label style="display:flex;align-items:center;gap:0.6rem;cursor:pointer;text-transform:none;letter-spacing:0;font-size:0.95rem;color:var(--text);font-weight:500;">
+              <input type="checkbox" id="isPaid" checked style="width:18px;height:18px;accent-color:#276749;" onchange="togglePaidUI()" />
+              Already paid — show “PAID IN FULL”
+            </label>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:1.25rem;">
+          <h2>Line Items <span style="font-weight:400;font-size:0.85rem;color:var(--muted);">(enter amounts incl. GST)</span></h2>
+          <div class="line-items" id="lineItems">
+            <!-- rows added by JS -->
+          </div>
+          <button type="button" class="btn btn-outline" style="margin-top:0.5rem;" onclick="addLineItem()">+ Add line item</button>
+
+          <div class="summary-box" id="summaryBox">
+            <div class="summary-row">
+              <span>Subtotal (excl. GST)</span>
+              <span id="sumSubtotal">$0.00</span>
+            </div>
+            <div class="summary-row">
+              <span>GST @ 15%</span>
+              <span id="sumGst">$0.00</span>
+            </div>
+            <div class="summary-row total">
+              <span id="sumTotalLabel">TOTAL (incl. GST)</span>
+              <span id="sumTotal">$0.00</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:1.25rem;">
+          <h2>Payment Details</h2>
+          <div class="form-group">
+            <label>Bank Account Number</label>
+            <input type="text" id="bankAccount" placeholder="e.g. 12-3456-7890123-00" />
+          </div>
+          <div class="form-group">
+            <label>Payment Reference</label>
+            <input type="text" id="paymentRef" placeholder="Usually invoice number or customer name" />
+          </div>
+          <div class="form-group">
+            <label>Additional Notes (optional)</label>
+            <textarea id="notes" placeholder="e.g. Thank you for staying with us. Check-in 2pm…" rows="2"></textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT: Fixed info + Actions -->
+      <div>
+        <div class="card">
+          <h2>Supplier (Fixed)</h2>
+          <div class="fixed-info">
+            <p><strong>THE TOP FLOOR HALLENSTEIN APARTMENT</strong></p>
+            <p>Trading name of Hannah &amp; David Spencer Partnership</p>
+            <p style="margin-top:0.6rem;"><strong>Supplier</strong><br>
+              Hannah &amp; David Spencer Partnership<br>
+              60 Lime Street<br>
+              Newfield, Invercargill 9812<br>
+              New Zealand</p>
+            <p style="margin-top:0.6rem;"><strong>GST No:</strong> 148-564-841</p>
+            <p style="margin-top:0.6rem;"><strong>Accommodation Property</strong><br>
+              The Top Floor Hallenstein Apartment<br>
+              26A/135 Hallenstein Street<br>
+              Queenstown<br>
+              New Zealand</p>
+            <p style="margin-top:0.6rem;"><strong>Account Name:</strong> David &amp; Hannah Spencer</p>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:1.25rem;">
+          <h2>Generate PDFs</h2>
+          <p style="font-size:0.9rem;color:var(--muted);margin-bottom:1rem;">
+            Fill the form, then download either (or both) documents. Everything is generated in your browser — no data is sent anywhere.
+          </p>
+          <div class="actions">
+            <button class="btn btn-primary btn-block" onclick="generatePDF('invoice')">
+              ⬇ Download Tax Invoice
+            </button>
+            <button class="btn btn-success btn-block" onclick="generatePDF('receipt')">
+              ⬇ Download GST Receipt
+            </button>
+            <button class="btn btn-outline btn-block" onclick="resetForm()">
+              Clear Form
+            </button>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:1.25rem;">
+          <h2>Tips</h2>
+          <ul style="font-size:0.88rem;color:var(--muted);padding-left:1.2rem;">
+            <li style="margin-bottom:0.4rem;">Enter amounts <strong>including GST</strong> — the system extracts the 15% GST for the breakdown.</li>
+            <li style="margin-bottom:0.4rem;">Defaults include Accommodation + Cleaning Fee — edit or add more as needed.</li>
+            <li style="margin-bottom:0.4rem;">Tick <strong>Already paid</strong> to show “PAID IN FULL” and “TOTAL”. Untick for unpaid invoices (“TOTAL DUE”).</li>
+            <li style="margin-bottom:0.4rem;">Payment Date is shown when marked as paid; Due Date is useful when unpaid.</li>
+            <li>Both documents meet NZ taxable supply information requirements.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    Local generator for Hannah &amp; David Spencer Partnership · GST 148-564-841 · Data never leaves your device
+  </footer>
+
+  <div class="toast" id="toast">PDF downloaded</div>
+
+  <script>
+    // ---------- Helpers ----------
+    const GST_RATE = 0.15;
+
+    function formatMoney(n) {
+      return '$' + Number(n).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    }
+
+    function formatDate(iso) {
+      if (!iso) return '';
+      const d = new Date(iso + 'T00:00:00');
+      return d.toLocaleDateString('en-NZ', { day: 'numeric', month: 'long', year: 'numeric' });
+    }
+
+    function todayISO() {
+      const d = new Date();
+      return d.toISOString().slice(0, 10);
+    }
+
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.classList.add('show');
+      setTimeout(() => t.classList.remove('show'), 2500);
+    }
+
+    // ---------- Line items ----------
+    // Amounts are entered GST-INCLUSIVE. We extract excl + GST for the breakdown.
+    let lineItemCount = 0;
+
+    function addLineItem(desc = '', amount = '') {
+      lineItemCount++;
+      const id = lineItemCount;
+      const div = document.createElement('div');
+      div.className = 'line-item';
+      div.id = 'li-' + id;
+      div.innerHTML = `
+        <input type="text" placeholder="Description (e.g. Accommodation, Cleaning Fee)" value="${desc}" data-field="desc" oninput="recalc()" />
+        <input type="number" step="0.01" min="0" placeholder="incl. GST" value="${amount}" data-field="amount" oninput="recalc()" />
+        <button type="button" class="btn-icon" onclick="removeLineItem(${id})" title="Remove">×</button>
+      `;
+      document.getElementById('lineItems').appendChild(div);
+      recalc();
+    }
+
+    function removeLineItem(id) {
+      const el = document.getElementById('li-' + id);
+      if (el) el.remove();
+      recalc();
+    }
+
+    function getLineItems() {
+      const items = [];
+      document.querySelectorAll('.line-item').forEach(row => {
+        const desc = row.querySelector('[data-field="desc"]').value.trim();
+        const amtIncl = parseFloat(row.querySelector('[data-field="amount"]').value) || 0;
+        if (desc || amtIncl) {
+          // Extract exclusive amount and GST from inclusive figure
+          const amountExcl = +(amtIncl / (1 + GST_RATE)).toFixed(2);
+          const gst = +(amtIncl - amountExcl).toFixed(2);
+          items.push({ desc, amountIncl: amtIncl, amountExcl, gst });
+        }
+      });
+      return items;
+    }
+
+    function togglePaidUI() {
+      const paid = document.getElementById('isPaid').checked;
+      const label = document.getElementById('sumTotalLabel');
+      if (label) label.textContent = paid ? 'TOTAL (incl. GST)' : 'TOTAL DUE (incl. GST)';
+    }
+
+    function recalc() {
+      const items = getLineItems();
+      const total = items.reduce((s, i) => s + i.amountIncl, 0);
+      const subtotal = items.reduce((s, i) => s + i.amountExcl, 0);
+      const gst = +(total - subtotal).toFixed(2);
+      document.getElementById('sumSubtotal').textContent = formatMoney(subtotal);
+      document.getElementById('sumGst').textContent = formatMoney(gst);
+      document.getElementById('sumTotal').textContent = formatMoney(total);
+      togglePaidUI();
+      return { subtotal, gst, total, items };
+    }
+
+    // ---------- Form data ----------
+    function getFormData() {
+      const { subtotal, gst, total, items } = recalc();
+      return {
+        customerName: document.getElementById('customerName').value.trim(),
+        customerAddress: document.getElementById('customerAddress').value.trim(),
+        customerContact: document.getElementById('customerContact').value.trim(),
+        invoiceNo: document.getElementById('invoiceNo').value.trim(),
+        invoiceDate: document.getElementById('invoiceDate').value,
+        dueDate: document.getElementById('dueDate').value,
+        paymentDate: document.getElementById('paymentDate').value,
+        isPaid: document.getElementById('isPaid').checked,
+        bankAccount: document.getElementById('bankAccount').value.trim(),
+        paymentRef: document.getElementById('paymentRef').value.trim() || document.getElementById('invoiceNo').value.trim(),
+        notes: document.getElementById('notes').value.trim(),
+        items,          // each has amountIncl, amountExcl, gst
+        subtotal,       // excl GST
+        gst,
+        total           // incl GST
+      };
+    }
+
+    // ---------- PDF Generation ----------
+    function generatePDF(type) {
+      const data = getFormData();
+
+      if (!data.customerName) {
+        alert('Please enter a Customer / Business Name.');
+        document.getElementById('customerName').focus();
+        return;
+      }
+      if (!data.invoiceNo) {
+        alert('Please enter an Invoice Number.');
+        document.getElementById('invoiceNo').focus();
+        return;
+      }
+      if (!data.invoiceDate) {
+        alert('Please enter an Invoice Date.');
+        document.getElementById('invoiceDate').focus();
+        return;
+      }
+      if (data.items.length === 0 || data.total <= 0) {
+        alert('Please add at least one line item with an amount.');
+        return;
+      }
+
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+      const pageW = doc.internal.pageSize.getWidth();
+      const margin = 18;
+      let y = 18;
+
+      // Colours
+      const dark = [26, 54, 93];
+      const accent = [43, 108, 176];
+      const muted = [113, 128, 150];
+      const lightBg = [237, 242, 247];
+
+      // Helper
+      const setColor = (rgb) => doc.setTextColor(...rgb);
+      const setFill = (rgb) => doc.setFillColor(...rgb);
+
+      // ===== HEADER =====
+      setFill(dark);
+      doc.rect(0, 0, pageW, 32, 'F');
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(14);
+      setColor([255, 255, 255]);
+      doc.text('THE TOP FLOOR HALLENSTEIN APARTMENT', margin, 14);
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
+      doc.text('Trading name of Hannah & David Spencer Partnership', margin, 20);
+
+      // Document type badge
+      const docTitle = type === 'invoice' ? 'TAX INVOICE' : 'GST RECEIPT';
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(16);
+      doc.text(docTitle, pageW - margin, 16, { align: 'right' });
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
+      doc.text('GST No: 148-564-841', pageW - margin, 23, { align: 'right' });
+
+      y = 42;
+
+      // ===== SUPPLIER + BILL TO =====
+      const colW = (pageW - margin * 2 - 8) / 2;
+
+      // Supplier
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(8);
+      setColor(muted);
+      doc.text('SUPPLIER', margin, y);
+      y += 5;
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(10);
+      setColor(dark);
+      doc.text('Hannah & David Spencer Partnership', margin, y);
+      y += 4.5;
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
+      setColor([45, 55, 72]);
+      const supplierLines = [
+        '60 Lime Street',
+        'Newfield, Invercargill 9812',
+        'New Zealand'
+      ];
+      supplierLines.forEach(l => {
+        doc.text(l, margin, y);
+        y += 4;
+      });
+
+      // Bill To (right column)
+      let yRight = 42;
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(8);
+      setColor(muted);
+      doc.text('BILL TO', margin + colW + 8, yRight);
+      yRight += 5;
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(10);
+      setColor(dark);
+      doc.text(data.customerName, margin + colW + 8, yRight);
+      yRight += 4.5;
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
+      setColor([45, 55, 72]);
+      if (data.customerAddress) {
+        data.customerAddress.split('\n').forEach(l => {
+          if (l.trim()) {
+            doc.text(l.trim(), margin + colW + 8, yRight);
+            yRight += 4;
+          }
+        });
+      }
+      if (data.customerContact) {
+        doc.text(data.customerContact, margin + colW + 8, yRight);
+        yRight += 4;
+      }
+
+      y = Math.max(y, yRight) + 8;
+
+      // ===== META BOX =====
+      setFill(lightBg);
+      doc.roundedRect(margin, y, pageW - margin * 2, 18, 2, 2, 'F');
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(8);
+      setColor(muted);
+      doc.text('INVOICE NO.', margin + 4, y + 6);
+      doc.text('INVOICE DATE', margin + 55, y + 6);
+      // Show payment date when paid; due date when unpaid (if provided)
+      if (data.isPaid && data.paymentDate) {
+        doc.text('PAYMENT DATE', margin + 105, y + 6);
+      } else if (!data.isPaid && data.dueDate) {
+        doc.text('PAYMENT DUE', margin + 105, y + 6);
+      }
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(10);
+      setColor(dark);
+      doc.text(data.invoiceNo, margin + 4, y + 13);
+      doc.text(formatDate(data.invoiceDate), margin + 55, y + 13);
+      if (data.isPaid && data.paymentDate) {
+        doc.text(formatDate(data.paymentDate), margin + 105, y + 13);
+      } else if (!data.isPaid && data.dueDate) {
+        doc.text(formatDate(data.dueDate), margin + 105, y + 13);
+      }
+
+      y += 26;
+
+      // ===== LINE ITEMS TABLE =====
+      // Header
+      setFill(dark);
+      doc.rect(margin, y, pageW - margin * 2, 8, 'F');
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(8);
+      setColor([255, 255, 255]);
+      doc.text('DESCRIPTION', margin + 3, y + 5.5);
+      doc.text('AMOUNT (incl. GST)', pageW - margin - 3, y + 5.5, { align: 'right' });
+      y += 8;
+
+      // Rows
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
+      setColor([45, 55, 72]);
+
+      data.items.forEach((item, idx) => {
+        const rowH = 9;
+        if (idx % 2 === 0) {
+          setFill([248, 250, 252]);
+          doc.rect(margin, y, pageW - margin * 2, rowH, 'F');
+        }
+        const desc = item.desc || 'Accommodation / Service';
+        // wrap long descriptions
+        const maxW = pageW - margin * 2 - 50;
+        const lines = doc.splitTextToSize(desc, maxW);
+        doc.text(lines[0], margin + 3, y + 6);
+        doc.text(formatMoney(item.amountIncl), pageW - margin - 3, y + 6, { align: 'right' });
+        y += rowH;
+      });
+
+      y += 4;
+
+      // ===== TOTALS =====
+      const totalsX = pageW - margin - 70;
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
+      setColor([45, 55, 72]);
+      doc.text('Subtotal (excl. GST)', totalsX, y, { align: 'right' });
+      doc.text(formatMoney(data.subtotal), pageW - margin, y, { align: 'right' });
+      y += 6;
+      doc.text('GST @ 15%', totalsX, y, { align: 'right' });
+      doc.text(formatMoney(data.gst), pageW - margin, y, { align: 'right' });
+      y += 3;
+      doc.setDrawColor(200);
+      doc.line(totalsX - 30, y, pageW - margin, y);
+      y += 6;
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(11);
+      setColor(dark);
+      const totalLabel = data.isPaid ? 'TOTAL (incl. GST)' : 'TOTAL DUE (incl. GST)';
+      doc.text(totalLabel, totalsX, y, { align: 'right' });
+      doc.text(formatMoney(data.total), pageW - margin, y, { align: 'right' });
+
+      y += 12;
+
+      // ===== PAYMENT DETAILS =====
+      setFill(lightBg);
+      doc.roundedRect(margin, y, pageW - margin * 2, 32, 2, 2, 'F');
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(8);
+      setColor(muted);
+      doc.text('PAYMENT DETAILS', margin + 4, y + 6);
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
+      setColor([45, 55, 72]);
+      doc.text('Account Name:  David & Hannah Spencer', margin + 4, y + 13);
+      if (data.bankAccount) {
+        doc.text('Bank Account:  ' + data.bankAccount, margin + 4, y + 19);
+      } else {
+        doc.text('Bank Account:  (see statement / provided separately)', margin + 4, y + 19);
+      }
+      doc.text('Reference:  ' + data.paymentRef, margin + 4, y + 25);
+
+      // Show PAID IN FULL only when marked as paid
+      if (data.isPaid) {
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(10);
+        setColor([39, 103, 73]);
+        doc.text('PAID IN FULL', pageW - margin - 4, y + 16, { align: 'right' });
+      }
+
+      y += 40;
+
+      // ===== PROPERTY =====
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(8);
+      setColor(muted);
+      doc.text('ACCOMMODATION PROPERTY', margin, y);
+      y += 5;
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
+      setColor([45, 55, 72]);
+      doc.text('The Top Floor Hallenstein Apartment', margin, y);
+      y += 4;
+      doc.text('26A/135 Hallenstein Street, Queenstown, New Zealand', margin, y);
+
+      y += 10;
+
+      // Notes
+      if (data.notes) {
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(8);
+        setColor(muted);
+        doc.text('NOTES', margin, y);
+        y += 5;
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(9);
+        setColor([45, 55, 72]);
+        const noteLines = doc.splitTextToSize(data.notes, pageW - margin * 2);
+        doc.text(noteLines, margin, y);
+        y += noteLines.length * 4 + 4;
+      }
+
+      // Footer
+      y = Math.max(y + 8, 270);
+      doc.setDrawColor(200);
+      doc.line(margin, y, pageW - margin, y);
+      y += 6;
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8);
+      setColor(muted);
+      doc.text('Thank you for your business.', margin, y);
+      doc.text('Generated for Hannah & David Spencer Partnership · GST 148-564-841', pageW - margin, y, { align: 'right' });
+
+      // Save
+      const filename = (type === 'invoice' ? 'Tax-Invoice-' : 'GST-Receipt-') + data.invoiceNo.replace(/[^a-zA-Z0-9-]/g, '') + '.pdf';
+      doc.save(filename);
+      showToast((type === 'invoice' ? 'Tax Invoice' : 'GST Receipt') + ' downloaded');
+    }
+
+    // ---------- Init ----------
+    function resetForm() {
+      document.getElementById('customerName').value = '';
+      document.getElementById('customerAddress').value = '';
+      document.getElementById('customerContact').value = '';
+      document.getElementById('invoiceNo').value = 'TFA-2026-001';
+      document.getElementById('invoiceDate').value = todayISO();
+      document.getElementById('dueDate').value = '';
+      document.getElementById('paymentDate').value = todayISO();
+      document.getElementById('isPaid').checked = true;
+      document.getElementById('bankAccount').value = '';
+      document.getElementById('paymentRef').value = '';
+      document.getElementById('notes').value = '';
+      document.getElementById('lineItems').innerHTML = '';
+      lineItemCount = 0;
+      addLineItem('Accommodation – Top Floor Hallenstein Apartment', '');
+      addLineItem('Cleaning Fee', '');
+      recalc();
+    }
+
+    // Start
+    document.getElementById('invoiceDate').value = todayISO();
+    document.getElementById('paymentDate').value = todayISO();
+    addLineItem('Accommodation – Top Floor Hallenstein Apartment', '');
+    addLineItem('Cleaning Fee', '');
+    togglePaidUI();
+  </script>
+</body>
+</html>
